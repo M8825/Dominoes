@@ -1,136 +1,117 @@
 import random
-game_state = ["It's your turn to make a move. Enter your command.", "Computer is about to make a move. Press Enter to continue..."]
-domino_snake = []
-stock_pieces = []
-player_pieces = []
-computer_pieces = []
+
+
+game_state = [
+    "It's your turn to make a move. Enter your command.",
+    "Computer is about to make a move. Press Enter to continue...",
+    "The game is over. It's a draw!",
+    "The game is over. The computer won!",
+    "The game is over. You won!",
+]
 status = []
 
 
 def generate_set():
     domino_set = [[i, j] for i in range(7) for j in range(7)]
     for i in domino_set:
-        if i[::-1] in domino_set[domino_set.index(i) + 1:]:
+        if i[::-1] in domino_set[domino_set.index(i) + 1 :]:
             domino_set.remove(i[::-1])
     random.shuffle(domino_set)
 
     return domino_set
 
 
-def end_game():  
-    global status
-    global computer_pieces
-    global player_pieces
+def draw_snake(snake):
+    if len(snake) > 6:
+        print(*snake[:3], "...", *snake[-3:], sep="", end="\n")
+    else:
+        print(*snake, sep="", end="\n")
 
-    if len(domino_snake) == 8 and domino_snake[0][0] == domino_snake[:-1][1]:
-        if len([j for i in domino_snake for j in i if j == domino_snake[0][0]]) == 8:
-            status = "The game is over. It's a draw!"
-    elif not computer_pieces:
-        status =  "The game is over. The computer won!"
-    elif not player_pieces:
-        status = "The game is over. You won!"
 
-def player_move():
-    global player_pieces
-    global computer_pieces
-    global domino_snake
-    global stock_pieces
+def board(stock_p, comp_p, d_snake, player_p):
+    print(70 * "=")
+    print(f"Stock size: {len(stock_p)}")
+    print(f"Computer pieces: {len(comp_p)}")
+
+    draw_snake(d_snake)
+
+    print("Your pieces:")
+    for i in player_p:
+        print(f"{player_p.index(i) + 1}:{i}")
+
+    player_move(d_snake, stock_p, player_p, comp_p)
+
+
+def game_over(d_snake, player_p, comp_p):
     global status
-    end_game()
+    if len(d_snake) == 8 and d_snake[0][0] == d_snake[:-1][1]:
+        if len([j for i in d_snake for j in i if j == d_snake[0][0]]) == 8:
+            status = game_state[2]
+    elif not comp_p:
+        status = game_state[3]
+    elif not player_p:
+        status = game_state[4]
+
+
+def player_move(d_snake, stock_p, player_p, comp_p):
+    global status
+
+    game_over(d_snake, player_p, comp_p) # Check for game end conditions
     print(f"Status: {status}")
-
-    curr_player = computer_pieces if "Computer" in status else player_pieces
+    curr_player = comp_p if "Computer" in status else player_p
 
     while True:
         if status.endswith("!"):
-            break 
+            break
         try:
             if "Computer" in status:
                 status = game_state[0]
                 usr_inp = input()
                 if usr_inp == "":
-                    move = random.randint(-len(computer_pieces), len(computer_pieces))
+                    move = random.randint(-len(comp_p), len(comp_p))
             else:
                 move = int(input())
-                if abs(move) > len(player_pieces):
+                if abs(move) > len(player_p):
                     print("Invalid input. Please try again.")
                     continue
                 elif move == 0:
-                    player_pieces.append(stock_pieces.pop())
-                    game_display(stock_pieces, computer_pieces)
+                    player_p.append(stock_p.pop())
                     status = game_state[1]
-                    player_move()
-                
-                status = game_state[1]
+                    board(stock_p, comp_p, d_snake, player_p)
 
-            if 0 <= move:
-                # Decrese move to avoid index error
-                domino_snake.append(curr_player.pop(move - 1))
-                game_display(stock_pieces, computer_pieces)  # Display main board
-                player_move()
+                status = game_state[1]
+            if 0 < move:
+                d_snake.append(curr_player.pop(move - 1))
+                board(stock_p, comp_p, d_snake, player_p)
             else:
-                # Increase int(move) to avoid index error
-                domino_snake.insert(0, curr_player.pop(abs(move + 1)))
-                game_display(stock_pieces, computer_pieces)  # Display main board
-                player_move()
-          
+                d_snake.insert(0, curr_player.pop(abs(move + 1)))
+                board(stock_p, comp_p, d_snake, player_p)
         except:
             print("Invalid input. Please try again.")
             continue
 
 
-def snake_display(snake):
-    snake_str = ""
-    if len(snake) > 6:
-        snake.insert(3, "...")
-        snake = snake[:4] + snake[-3:]
-        for i in snake:
-            snake_str = snake_str + str(i)
-    else:
-        snake_str = snake
-
-    return snake_str
-
-
-def game_display(stock_pieces, computer_pieces):
-    print(f"""======================================================================
-Stock size: {len(stock_pieces)}
-Computer pieces: {len(computer_pieces)}
-""")
-    print("".join(str(i) for i in snake_display(domino_snake)))
-    print("Your pieces:")
-
-    for i in player_pieces:
-        print(f"{player_pieces.index(i) + 1}:{i}")
-
-
 def main():
-    global player_pieces
-    global computer_pieces
-    global domino_snake
-    global stock_pieces
     global status
 
-    domino_set = generate_set()             # Generate domino set
-    stock_pieces = domino_set[:14]          # 14 domino elements
-    computer_pieces = domino_set[14:21]     # 7 or 6 domino elements
-    player_pieces = domino_set[21:]         # 6 or 7 domino elements
-    domino_snake = [i for i in computer_pieces + player_pieces if i[0] == i[1]]
+    domino_set = generate_set()  # Generate domino set
+    stock_p = domino_set[:14]  # 14 stock elements
+    comp_p = domino_set[14:21]  # 7 or 6 computer elements
+    player_p = domino_set[21:]  # 6 or 7 domino elements
+    # Create list of doubles from computer and player pieces.
+    domino_snake = [i for i in comp_p + player_p if i[0] == i[1]]
 
     if domino_snake:
-        if max(domino_snake) in computer_pieces:
-            elem_index = computer_pieces.index(max(domino_snake))
+        if max(domino_snake) in comp_p:
+            domino_snake = [comp_p.pop(comp_p.index(max(domino_snake)))]
             status = game_state[0]
-            domino_snake = [computer_pieces.pop(elem_index)]
         else:
-            elem_index = player_pieces.index(max(domino_snake))
+            domino_snake = [player_p.pop(player_p.index(max(domino_snake)))]
             status = game_state[1]
-            domino_snake = [player_pieces.pop(elem_index)]
     else:
         main()
 
-    game_display(stock_pieces, computer_pieces)  # Display main board
+    board(stock_p, comp_p, domino_snake, player_p)
 
-    player_move()
 
 main()
