@@ -20,6 +20,101 @@ def generate_set():
 
     return domino_set
 
+def game_over(d_snake, player_p, comp_p):
+    global status
+    if not comp_p:
+        print("Status:", game_state[3])
+        exit()
+    elif not player_p:
+        print("Status:", game_state[4])
+        exit()
+    elif d_snake[0][0] == d_snake[-1][1]: 
+        if len([j for i in d_snake for j in i if j == d_snake[0][0]]) == 8:
+            print("Status:", game_state[2])
+            exit()
+
+
+def comp_move(d_snake, comp_p, stock_p):
+    rng = [i for i in range(-len(comp_p), len(comp_p)) if i != 0]
+    rng.append(0)
+
+    for move in rng:
+        if 0 < move:
+            if d_snake[-1][1] == comp_p[move - 1][0]:
+                d_snake.append(comp_p.pop(move - 1))
+                break
+            elif d_snake[-1][1] == comp_p[move - 1][1]: # From left to right
+                comp_p[move - 1].insert(0, comp_p[move - 1].pop(1))
+                d_snake.append(comp_p.pop(move - 1))
+                break
+        elif move < 0:
+            move = abs(move)
+            if d_snake[0][0] == comp_p[move - 1][1]:
+                d_snake.insert(0, comp_p.pop(move - 1))
+                break
+            elif (d_snake[0][0] == comp_p[move - 1][0]):  # From right to left
+                comp_p[move - 1].append(comp_p[move - 1].pop(0))
+                d_snake.insert(0, comp_p.pop(move - 1))
+                break
+        elif move == 0:
+            if stock_p:
+                comp_p.append(stock_p.pop())
+
+    return stock_p, comp_p, d_snake
+
+
+def next_move(d_snake, stock_p, player_p, comp_p):
+    global status
+
+    while True:
+            if "Computer" in status:
+                status = game_state[0]
+                if input() == "": #Enter
+                    move = comp_move(d_snake, comp_p, stock_p)
+                else:
+                    continue
+                board(move[0], move[1], move[2], player_p)
+                break
+            else:
+                try:
+                    move = int(input())
+                except ValueError: 
+                    print("Invalid input. Please try again.")
+                    continue
+                if abs(move) > len(player_p):
+                    print("Invalid input. Please try again.")
+                    continue
+                elif move == 0:
+                    player_p.append(stock_p.pop())
+                    status = game_state[1]
+                    board(stock_p, comp_p, d_snake, player_p)
+                else:
+                    if 0 < move:
+                        if d_snake[-1][1] == player_p[move - 1][0]:
+                            d_snake.append(player_p.pop(move - 1))
+                        elif d_snake[-1][1] == player_p[move - 1][1]: # From left to right
+                            player_p[move - 1].insert(0, player_p[move - 1].pop(1))
+                            d_snake.append(player_p.pop(move - 1))
+                        else:
+                            print("Illegal move. Please try again.")
+                            continue
+                        status = game_state[1]
+                        board(stock_p, comp_p, d_snake, player_p)
+                        break
+                    elif 0 > move:
+                        move = abs(move)
+                        if d_snake[0][0] == player_p[move - 1][1]:
+                            d_snake.insert(0, player_p.pop(move - 1))
+                        elif d_snake[0][0] == player_p[move - 1][0]: # From right to left
+                            player_p[move - 1].append(player_p[move - 1].pop(0))
+                            d_snake.insert(0, player_p.pop(move - 1))
+                        else:
+                            print("Illegal move. Please try again.")
+                            continue
+                        status = game_state[1]
+                        board(stock_p, comp_p, d_snake, player_p)
+                        break
+
 
 def draw_snake(snake):
     if len(snake) > 6:
@@ -29,75 +124,30 @@ def draw_snake(snake):
 
 
 def board(stock_p, comp_p, d_snake, player_p):
+    global status
     print(70 * "=")
     print(f"Stock size: {len(stock_p)}")
-    print(f"Computer pieces: {len(comp_p)}")
+    print(f"Computer pieces: {len(comp_p)}\n")
 
     draw_snake(d_snake)
 
-    print("Your pieces:")
+    print("\nYour pieces:")
     for i in player_p:
         print(f"{player_p.index(i) + 1}:{i}")
 
-    player_move(d_snake, stock_p, player_p, comp_p)
-
-
-def game_over(d_snake, player_p, comp_p):
-    global status
-    if len(d_snake) == 8 and d_snake[0][0] == d_snake[:-1][1]:
-        if len([j for i in d_snake for j in i if j == d_snake[0][0]]) == 8:
-            status = game_state[2]
-    elif not comp_p:
-        status = game_state[3]
-    elif not player_p:
-        status = game_state[4]
-
-
-def player_move(d_snake, stock_p, player_p, comp_p):
-    global status
-
     game_over(d_snake, player_p, comp_p) # Check for game end conditions
+
     print(f"Status: {status}")
-    curr_player = comp_p if "Computer" in status else player_p
-
-    while True:
-        if status.endswith("!"):
-            break
-        try:
-            if "Computer" in status:
-                status = game_state[0]
-                usr_inp = input()
-                if usr_inp == "":
-                    move = random.randint(-len(comp_p), len(comp_p))
-            else:
-                move = int(input())
-                if abs(move) > len(player_p):
-                    print("Invalid input. Please try again.")
-                    continue
-                elif move == 0:
-                    player_p.append(stock_p.pop())
-                    status = game_state[1]
-                    board(stock_p, comp_p, d_snake, player_p)
-
-                status = game_state[1]
-            if 0 < move:
-                d_snake.append(curr_player.pop(move - 1))
-                board(stock_p, comp_p, d_snake, player_p)
-            else:
-                d_snake.insert(0, curr_player.pop(abs(move + 1)))
-                board(stock_p, comp_p, d_snake, player_p)
-        except:
-            print("Invalid input. Please try again.")
-            continue
+    next_move(d_snake, stock_p, player_p, comp_p)
 
 
 def main():
     global status
 
     domino_set = generate_set()  # Generate domino set
-    stock_p = domino_set[:14]  # 14 stock elements
-    comp_p = domino_set[14:21]  # 7 or 6 computer elements
-    player_p = domino_set[21:]  # 6 or 7 domino elements
+    stock_p = domino_set[:14]    # 14 stock elements
+    comp_p = domino_set[14:21]   # 7 or 6 computer elements
+    player_p = domino_set[21:]   # 6 or 7 domino elements
     # Create list of doubles from computer and player pieces.
     domino_snake = [i for i in comp_p + player_p if i[0] == i[1]]
 
