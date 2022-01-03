@@ -69,7 +69,7 @@ def next_move(d_snake, stock_p, player_p, comp_p):
     while True:
             if "Computer" in status:
                 status = game_state[0]
-                if input() == "": #Enter
+                if input() == "":
                     move = comp_move(d_snake, comp_p, stock_p)
                 else:
                     continue
